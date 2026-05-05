@@ -2,7 +2,8 @@
 
 ## Frontend
 
-- token definitions
+- token definitions and scanner infrastructure
+- lexer diagnostics and source management
 - parser and AST
 - name resolution
 - type checking

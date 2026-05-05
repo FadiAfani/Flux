@@ -2,7 +2,7 @@
 
 ## Pipeline
 
-`source -> parser -> semantic analysis -> HIR -> MIR -> LLVM IR -> object code`
+`source -> lexer -> parser -> semantic analysis -> HIR -> MIR -> LLVM IR -> object code`
 
 ## HIR
 
@@ -28,7 +28,7 @@ Good MIR candidates:
 
 ## Near-term roadmap
 
-1. Add lexer and parser.
+1. Grow the lexer and add the parser.
 2. Define typed HIR node families.
 3. Introduce pass management and diagnostics.
 4. Design a control-flow based MIR.

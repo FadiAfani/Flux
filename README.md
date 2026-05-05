@@ -13,6 +13,7 @@ The project is organized around a staged compilation pipeline:
 ## Layout
 
 - `include/flux/driver`: compiler entry points and pipeline coordination
+- `include/flux/lexer`: token definitions, scanner, and lexer entry points
 - `include/flux/hir`: HIR data structures
 - `include/flux/mir`: MIR data structures
 - `include/flux/lowering`: lowering passes between IR layers
@@ -22,7 +23,7 @@ The project is organized around a staged compilation pipeline:
 
 ## Build
 
-Flux uses CMake and expects an installed LLVM with CMake package files available.
+Flux uses CMake and currently exposes the lexer layout as a header-only module.
 
 ```bash
 cmake -S . -B build -DLLVM_DIR=/path/to/llvm/lib/cmake/llvm
@@ -31,4 +32,4 @@ cmake --build build
 
 ## Current status
 
-This repository currently provides the compiler skeleton, IR module stubs, and a simple `fluxc` executable that demonstrates the planned pipeline.
+This repository currently provides the compiler skeleton plus a lexer-oriented header layout with token definitions, scanner declarations, and a frontend `lex()` entry point declaration.

@@ -10,3 +10,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(FLUX_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+add_library(flux_lexer INTERFACE)
+
+target_include_directories(flux_lexer
+    INTERFACE
+        ${FLUX_INCLUDE_DIR})
