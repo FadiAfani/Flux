@@ -4,12 +4,14 @@
 
 namespace flux::lexer {
 
+Scanner::Scanner(std::string_view source) : source_(source) {}
+
 char Scanner::advance() {
     char c = source_[cursor_++];
 
     if (c == '\n') {
         line_++;
-        column_ = 0;
+        column_ = 1;
     } else {
         column_++;
     }
@@ -277,10 +279,14 @@ Token Scanner::scan_token() {
 }
 
 ScanResult Scanner::scan() {
-
-    while (!is_at_end()) {
+    while (true) {
         Token t = scan_token();
+        const TokenKind kind = t.kind;
         tokens_.push_back(std::move(t));
+
+        if (kind == TokenKind::EndOfFile) {
+            break;
+        }
     }
 
     return {.tokens = std::move(tokens_), .errors = std::move(errors_)};

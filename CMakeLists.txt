@@ -11,8 +11,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(FLUX_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-add_library(flux_lexer INTERFACE)
+add_library(flux_lexer
+    src/lexer/scanner.cpp)
 
 target_include_directories(flux_lexer
-    INTERFACE
+    PUBLIC
         ${FLUX_INCLUDE_DIR})
+
+enable_testing()
+add_subdirectory(tests)
