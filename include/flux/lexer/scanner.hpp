@@ -19,7 +19,6 @@ inline const std::unordered_map<std::string_view, TokenKind> keywords = {
     {"to", TokenKind::KwTo},
     {"false", TokenKind::KwFalse},
     {"true", TokenKind::KwTrue},
-    {"let", TokenKind::KwLet},
     {"var", TokenKind::KwVar},
     {"struct", TokenKind::KwStruct},
     {"type", TokenKind::KwType},

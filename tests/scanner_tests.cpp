@@ -41,7 +41,7 @@ void expect_kinds(std::string_view source, const std::vector<TokenKind>& expecte
 }
 
 void lexes_keywords_identifiers_and_literals() {
-    Scanner scanner("let answer = 42\nvar ratio = 3.14 \"hello\"");
+    Scanner scanner("answer = 42\nvar ratio = 3.14 \"hello\"");
     const flux::lexer::ScanResult result = scanner.scan();
 
     if (!result.errors.empty()) {
@@ -49,7 +49,6 @@ void lexes_keywords_identifiers_and_literals() {
     }
 
     const std::vector<TokenKind> expected = {
-        TokenKind::KwLet,
         TokenKind::Identifier,
         TokenKind::Equal,
         TokenKind::IntegerLiteral,
@@ -65,8 +64,8 @@ void lexes_keywords_identifiers_and_literals() {
         fail("keywords, identifiers, and literals were not scanned as expected");
     }
 
-    if (result.tokens[1].lexeme != "answer" || result.tokens[3].lexeme != "42" ||
-        result.tokens[7].lexeme != "3.14" || result.tokens[8].lexeme != "hello") {
+    if (result.tokens[0].lexeme != "answer" || result.tokens[2].lexeme != "42" ||
+        result.tokens[6].lexeme != "3.14" || result.tokens[7].lexeme != "hello") {
         fail("literal or identifier lexeme did not match");
     }
 }
@@ -100,15 +99,16 @@ void lexes_operators_and_punctuation() {
 }
 
 void tracks_locations_after_whitespace() {
-    Scanner scanner(" \t\nlet");
+    Scanner scanner(" \t\nname");
     const flux::lexer::ScanResult result = scanner.scan();
 
     if (!result.errors.empty()) {
         fail("expected location test to have no errors");
     }
 
-    if (result.tokens.size() != 2 || result.tokens[0].kind != TokenKind::KwLet) {
-        fail("expected let token followed by EOF");
+    if (result.tokens.size() != 2 || result.tokens[0].kind != TokenKind::Identifier ||
+        result.tokens[0].lexeme != "name") {
+        fail("expected identifier followed by EOF");
     }
 
     if (result.tokens[0].location.line != 2 || result.tokens[0].location.column != 1) {
