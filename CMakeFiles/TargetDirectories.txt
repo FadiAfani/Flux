@@ -1,2 +1,9 @@
+/Users/fadi/Desktop/FluxLang/CMakeFiles/flux_lexer.dir
+/Users/fadi/Desktop/FluxLang/CMakeFiles/test.dir
 /Users/fadi/Desktop/FluxLang/CMakeFiles/edit_cache.dir
 /Users/fadi/Desktop/FluxLang/CMakeFiles/rebuild_cache.dir
+/Users/fadi/Desktop/FluxLang/tests/CMakeFiles/flux_scanner_tests.dir
+/Users/fadi/Desktop/FluxLang/tests/CMakeFiles/flux_allocator_tests.dir
+/Users/fadi/Desktop/FluxLang/tests/CMakeFiles/test.dir
+/Users/fadi/Desktop/FluxLang/tests/CMakeFiles/edit_cache.dir
+/Users/fadi/Desktop/FluxLang/tests/CMakeFiles/rebuild_cache.dir

@@ -58,7 +58,7 @@ std::unique_ptr<LiteralExpr> Parser::parse_literal() {
   }
 }
 
-UnaryExpr Parser::parse_unary_expr() {
+std::unique_ptr<UnaryExpr> Parser::parse_unary_expr() {
   auto op = peek();
   UnaryExpr res;
 
@@ -70,13 +70,13 @@ UnaryExpr Parser::parse_unary_expr() {
     break;
 
   default:
-    throw std::out_of_range("not a valid unary operation");
+  return nullptr;
   }
 
   auto expr = parse_expr();
 
   if (expr == nullptr) {
-    throw std::out_of_range("expected an expression");
+      report_error(expr)
   }
 
   return std::move(res);

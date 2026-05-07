@@ -33,6 +33,7 @@ public:
 
   const Token &peek();
   const Token &peek_next();
+  SourceSpan get_node_span();
   void advance();
 };
 } // namespace flux::parser

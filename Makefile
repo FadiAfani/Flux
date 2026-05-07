@@ -65,6 +65,16 @@ CMAKE_BINARY_DIR = /Users/fadi/Desktop/FluxLang
 #=============================================================================
 # Targets provided globally by CMake.
 
+# Special rule for the target test
+test:
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running tests..."
+	/opt/homebrew/bin/ctest $(ARGS)
+.PHONY : test
+
+# Special rule for the target test
+test/fast: test
+.PHONY : test/fast
+
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running CMake cache editor..."
@@ -116,6 +126,69 @@ depend:
 	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
+#=============================================================================
+# Target rules for targets named flux_lexer
+
+# Build rule for target.
+flux_lexer: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 flux_lexer
+.PHONY : flux_lexer
+
+# fast build rule for target.
+flux_lexer/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flux_lexer.dir/build.make CMakeFiles/flux_lexer.dir/build
+.PHONY : flux_lexer/fast
+
+#=============================================================================
+# Target rules for targets named flux_scanner_tests
+
+# Build rule for target.
+flux_scanner_tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 flux_scanner_tests
+.PHONY : flux_scanner_tests
+
+# fast build rule for target.
+flux_scanner_tests/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/flux_scanner_tests.dir/build.make tests/CMakeFiles/flux_scanner_tests.dir/build
+.PHONY : flux_scanner_tests/fast
+
+#=============================================================================
+# Target rules for targets named flux_allocator_tests
+
+# Build rule for target.
+flux_allocator_tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 flux_allocator_tests
+.PHONY : flux_allocator_tests
+
+# fast build rule for target.
+flux_allocator_tests/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/flux_allocator_tests.dir/build.make tests/CMakeFiles/flux_allocator_tests.dir/build
+.PHONY : flux_allocator_tests/fast
+
+src/lexer/scanner.o: src/lexer/scanner.cpp.o
+.PHONY : src/lexer/scanner.o
+
+# target to build an object file
+src/lexer/scanner.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flux_lexer.dir/build.make CMakeFiles/flux_lexer.dir/src/lexer/scanner.cpp.o
+.PHONY : src/lexer/scanner.cpp.o
+
+src/lexer/scanner.i: src/lexer/scanner.cpp.i
+.PHONY : src/lexer/scanner.i
+
+# target to preprocess a source file
+src/lexer/scanner.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flux_lexer.dir/build.make CMakeFiles/flux_lexer.dir/src/lexer/scanner.cpp.i
+.PHONY : src/lexer/scanner.cpp.i
+
+src/lexer/scanner.s: src/lexer/scanner.cpp.s
+.PHONY : src/lexer/scanner.s
+
+# target to generate assembly for a file
+src/lexer/scanner.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flux_lexer.dir/build.make CMakeFiles/flux_lexer.dir/src/lexer/scanner.cpp.s
+.PHONY : src/lexer/scanner.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -124,6 +197,13 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... test"
+	@echo "... flux_allocator_tests"
+	@echo "... flux_lexer"
+	@echo "... flux_scanner_tests"
+	@echo "... src/lexer/scanner.o"
+	@echo "... src/lexer/scanner.i"
+	@echo "... src/lexer/scanner.s"
 .PHONY : help
 
 

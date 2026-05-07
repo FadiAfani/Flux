@@ -63,20 +63,141 @@ CMAKE_BINARY_DIR = /Users/fadi/Desktop/FluxLang
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all:
+all: CMakeFiles/flux_lexer.dir/all
+all: tests/all
 .PHONY : all
 
 # The main recursive "codegen" target.
-codegen:
+codegen: CMakeFiles/flux_lexer.dir/codegen
+codegen: tests/codegen
 .PHONY : codegen
 
 # The main recursive "preinstall" target.
-preinstall:
+preinstall: tests/preinstall
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean:
+clean: CMakeFiles/flux_lexer.dir/clean
+clean: tests/clean
 .PHONY : clean
+
+#=============================================================================
+# Directory level rules for directory tests
+
+# Recursive "all" directory target.
+tests/all: tests/CMakeFiles/flux_scanner_tests.dir/all
+tests/all: tests/CMakeFiles/flux_allocator_tests.dir/all
+.PHONY : tests/all
+
+# Recursive "codegen" directory target.
+tests/codegen: tests/CMakeFiles/flux_scanner_tests.dir/codegen
+tests/codegen: tests/CMakeFiles/flux_allocator_tests.dir/codegen
+.PHONY : tests/codegen
+
+# Recursive "preinstall" directory target.
+tests/preinstall:
+.PHONY : tests/preinstall
+
+# Recursive "clean" directory target.
+tests/clean: tests/CMakeFiles/flux_scanner_tests.dir/clean
+tests/clean: tests/CMakeFiles/flux_allocator_tests.dir/clean
+.PHONY : tests/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/flux_lexer.dir
+
+# All Build rule for target.
+CMakeFiles/flux_lexer.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flux_lexer.dir/build.make CMakeFiles/flux_lexer.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flux_lexer.dir/build.make CMakeFiles/flux_lexer.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/fadi/Desktop/FluxLang/CMakeFiles --progress-num=3,4 "Built target flux_lexer"
+.PHONY : CMakeFiles/flux_lexer.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/flux_lexer.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/fadi/Desktop/FluxLang/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/flux_lexer.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/fadi/Desktop/FluxLang/CMakeFiles 0
+.PHONY : CMakeFiles/flux_lexer.dir/rule
+
+# Convenience name for target.
+flux_lexer: CMakeFiles/flux_lexer.dir/rule
+.PHONY : flux_lexer
+
+# codegen rule for target.
+CMakeFiles/flux_lexer.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flux_lexer.dir/build.make CMakeFiles/flux_lexer.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/fadi/Desktop/FluxLang/CMakeFiles --progress-num=3,4 "Finished codegen for target flux_lexer"
+.PHONY : CMakeFiles/flux_lexer.dir/codegen
+
+# clean rule for target.
+CMakeFiles/flux_lexer.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/flux_lexer.dir/build.make CMakeFiles/flux_lexer.dir/clean
+.PHONY : CMakeFiles/flux_lexer.dir/clean
+
+#=============================================================================
+# Target rules for target tests/CMakeFiles/flux_scanner_tests.dir
+
+# All Build rule for target.
+tests/CMakeFiles/flux_scanner_tests.dir/all: CMakeFiles/flux_lexer.dir/all
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/flux_scanner_tests.dir/build.make tests/CMakeFiles/flux_scanner_tests.dir/depend
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/flux_scanner_tests.dir/build.make tests/CMakeFiles/flux_scanner_tests.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/fadi/Desktop/FluxLang/CMakeFiles --progress-num=5,6 "Built target flux_scanner_tests"
+.PHONY : tests/CMakeFiles/flux_scanner_tests.dir/all
+
+# Build rule for subdir invocation for target.
+tests/CMakeFiles/flux_scanner_tests.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/fadi/Desktop/FluxLang/CMakeFiles 4
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/flux_scanner_tests.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/fadi/Desktop/FluxLang/CMakeFiles 0
+.PHONY : tests/CMakeFiles/flux_scanner_tests.dir/rule
+
+# Convenience name for target.
+flux_scanner_tests: tests/CMakeFiles/flux_scanner_tests.dir/rule
+.PHONY : flux_scanner_tests
+
+# codegen rule for target.
+tests/CMakeFiles/flux_scanner_tests.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/flux_scanner_tests.dir/build.make tests/CMakeFiles/flux_scanner_tests.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/fadi/Desktop/FluxLang/CMakeFiles --progress-num=5,6 "Finished codegen for target flux_scanner_tests"
+.PHONY : tests/CMakeFiles/flux_scanner_tests.dir/codegen
+
+# clean rule for target.
+tests/CMakeFiles/flux_scanner_tests.dir/clean:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/flux_scanner_tests.dir/build.make tests/CMakeFiles/flux_scanner_tests.dir/clean
+.PHONY : tests/CMakeFiles/flux_scanner_tests.dir/clean
+
+#=============================================================================
+# Target rules for target tests/CMakeFiles/flux_allocator_tests.dir
+
+# All Build rule for target.
+tests/CMakeFiles/flux_allocator_tests.dir/all:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/flux_allocator_tests.dir/build.make tests/CMakeFiles/flux_allocator_tests.dir/depend
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/flux_allocator_tests.dir/build.make tests/CMakeFiles/flux_allocator_tests.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/fadi/Desktop/FluxLang/CMakeFiles --progress-num=1,2 "Built target flux_allocator_tests"
+.PHONY : tests/CMakeFiles/flux_allocator_tests.dir/all
+
+# Build rule for subdir invocation for target.
+tests/CMakeFiles/flux_allocator_tests.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/fadi/Desktop/FluxLang/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/flux_allocator_tests.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/fadi/Desktop/FluxLang/CMakeFiles 0
+.PHONY : tests/CMakeFiles/flux_allocator_tests.dir/rule
+
+# Convenience name for target.
+flux_allocator_tests: tests/CMakeFiles/flux_allocator_tests.dir/rule
+.PHONY : flux_allocator_tests
+
+# codegen rule for target.
+tests/CMakeFiles/flux_allocator_tests.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/flux_allocator_tests.dir/build.make tests/CMakeFiles/flux_allocator_tests.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/fadi/Desktop/FluxLang/CMakeFiles --progress-num=1,2 "Finished codegen for target flux_allocator_tests"
+.PHONY : tests/CMakeFiles/flux_allocator_tests.dir/codegen
+
+# clean rule for target.
+tests/CMakeFiles/flux_allocator_tests.dir/clean:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/flux_allocator_tests.dir/build.make tests/CMakeFiles/flux_allocator_tests.dir/clean
+.PHONY : tests/CMakeFiles/flux_allocator_tests.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.
