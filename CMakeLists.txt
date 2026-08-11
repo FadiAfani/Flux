@@ -18,5 +18,16 @@ target_include_directories(flux_lexer
     PUBLIC
         ${FLUX_INCLUDE_DIR})
 
+add_library(flux_parser
+    src/parser/parser.cpp)
+
+target_include_directories(flux_parser
+    PUBLIC
+        ${FLUX_INCLUDE_DIR})
+
+target_link_libraries(flux_parser
+    PUBLIC
+        flux_lexer)
+
 enable_testing()
 add_subdirectory(tests)

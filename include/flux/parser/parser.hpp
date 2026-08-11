@@ -1,7 +1,14 @@
+#pragma once
+
 #include "../lexer/token.hpp"
-#include "../parser/node.hpp"
+#include "allocator.hpp"
+#include "node.hpp"
+
+#include <cstddef>
 #include <memory>
+#include <string>
 #include <vector>
+
 namespace flux::parser {
 
 struct ParseError {
@@ -10,30 +17,36 @@ struct ParseError {
 };
 
 struct ParseResult {
-  Program root;
+  std::shared_ptr<BumpAllocator> arena;
+  Program *root = nullptr;
   std::vector<ParseError> errors;
 };
 
 class Parser {
 
 private:
-  std::vector<flux::Token> tokens_;
+  std::vector<Token> tokens_;
   std::vector<ParseError> errors_;
-  size_t cursor_ = 0;
+  std::shared_ptr<BumpAllocator> arena_;
+  std::size_t cursor_ = 0;
+
   void report_error(SourceSpan loc, std::string message);
-  void report_error_with_span(const Token& start, const Token& end, std::string msg);
-  void report_error(const Token& start, std::string msg);
+  void report_error_with_span(const Token &start, const Token &end,
+                              std::string message);
+  void report_error(const Token &start, std::string message);
 
 public:
-  Parser(std::vector<flux::Token> tokens);
+  explicit Parser(std::vector<Token> tokens);
+
   ParseResult parse();
-  std::unique_ptr<LiteralExpr> parse_literal();
-  std::unique_ptr<UnaryExpr> parse_unary_expr();
-  std::unique_ptr<Expr> parse_expr();
+  Expr *parse_literal();
+  Expr *parse_unary_expr();
+  Expr *parse_expr();
 
   const Token &peek();
   const Token &peek_next();
   SourceSpan get_node_span();
   void advance();
 };
+
 } // namespace flux::parser

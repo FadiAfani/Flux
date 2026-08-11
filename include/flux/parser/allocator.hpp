@@ -1,65 +1,99 @@
+#pragma once
+
+#include <algorithm>
 #include <cstddef>
 #include <memory>
-#include <stdexcept>
+#include <new>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 #define BLOCK_SIZE 1024 * 64
-#define SCALING_FACTOR 1.5
 
 namespace flux::parser {
 
-    /**
-     * Used to allocate AST nodes in a buffer instead of relying on heap allocations
-     * Allows AST do be deallocated all at once
-     */
+/**
+ * Used to allocate AST nodes in a buffer instead of relying on heap
+ * allocations. All objects and backing storage are released with the allocator.
+ */
 
-    struct Block {
-        size_t len = 0;
-        size_t cap;
-        std::unique_ptr<std::byte[]> bytes;
-    };
-    class BumpAllocator {
+class BumpAllocator {
+private:
+  struct ArenaBlock {
+    size_t len = 0;
+    size_t cap;
+    std::unique_ptr<std::byte[]> bytes;
+  };
 
-        private:
-        std::vector<Block> blocks_;
-        std::byte* cur_;
+  struct Destructor {
+    void *object;
+    void (*destroy)(void *) noexcept;
+  };
 
-        void* allocate(size_t size, size_t alignment) {
-            auto& last = blocks_.back();
-            std::byte* end = last.bytes.get() + last.cap - 1;
-            std::byte* target = cur_ + static_cast<size_t>(cur_ - last.bytes.get()) % alignment;
+  std::vector<ArenaBlock> blocks_;
+  std::vector<Destructor> destructors_;
+  std::byte *cur_ = nullptr;
 
-            if (target + size > end) {
-                size_t gap = target > end ? static_cast<size_t>(target - end) : 0;
-                new_block(gap + SCALING_FACTOR * size);
-            }
-            cur_ = target + size;
+  void *allocate(size_t size, size_t alignment) {
+    auto *target = static_cast<void *>(cur_);
+    auto &last = blocks_.back();
+    size_t space = last.cap - last.len;
 
-            return target;
+    if (std::align(alignment, size, target, space) == nullptr) {
+      const auto required = size + alignment - 1;
+      new_block(std::max(static_cast<size_t>(BLOCK_SIZE), required));
 
-        }
+      auto &new_last = blocks_.back();
+      target = static_cast<void *>(cur_);
+      space = new_last.cap;
+      std::align(alignment, size, target, space);
+    }
 
-        void new_block(size_t size) {
-            auto bytes = std::make_unique<std::byte[]>(size);
-            Block b = {.len = 0, .cap = size, .bytes = std::move(bytes)};
-            cur_ = b.bytes.get();
-            blocks_.push_back(std::move(b));
-        }
+    auto &active = blocks_.back();
+    cur_ = static_cast<std::byte *>(target) + size;
+    active.len = static_cast<size_t>(cur_ - active.bytes.get());
+    return target;
+  }
 
-        public:
-        BumpAllocator() {
-            new_block(BLOCK_SIZE);
-        }
+  void new_block(size_t size) {
+    auto bytes = std::make_unique<std::byte[]>(size);
+    ArenaBlock block = {.len = 0, .cap = size, .bytes = std::move(bytes)};
+    cur_ = block.bytes.get();
+    blocks_.push_back(std::move(block));
+  }
 
-        template<typename T, typename ...Args>
-        T* create(Args&& ...args) {
-            size_t size = sizeof(T);
-            size_t alignment = alignof(T);
+public:
+  BumpAllocator() { new_block(BLOCK_SIZE); }
 
-            void* obj = allocate(size, alignment);
+  BumpAllocator(const BumpAllocator &) = delete;
+  BumpAllocator &operator=(const BumpAllocator &) = delete;
+  BumpAllocator(BumpAllocator &&) = delete;
+  BumpAllocator &operator=(BumpAllocator &&) = delete;
 
-            return new (obj) T(std::forward<Args>(args)...);
-        }
-    };
-}
+  ~BumpAllocator() {
+    for (auto it = destructors_.rbegin(); it != destructors_.rend(); ++it) {
+      it->destroy(it->object);
+    }
+  }
+
+  template <typename T, typename... Args> T *create(Args &&...args) {
+    void *storage = allocate(sizeof(T), alignof(T));
+    T *object = new (storage) T(std::forward<Args>(args)...);
+
+    if constexpr (!std::is_trivially_destructible_v<T>) {
+      try {
+        destructors_.push_back(
+            {.object = object, .destroy = [](void *value) noexcept {
+               static_cast<T *>(value)->~T();
+             }});
+      } catch (...) {
+        object->~T();
+        throw;
+      }
+    }
+
+    return object;
+  }
+};
+
+} // namespace flux::parser

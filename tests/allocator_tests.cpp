@@ -30,6 +30,14 @@ struct BlockSized {
     std::byte bytes[BLOCK_SIZE];
 };
 
+struct DestructionTracked {
+    bool* destroyed;
+
+    ~DestructionTracked() {
+        *destroyed = true;
+    }
+};
+
 void constructs_object_with_forwarded_arguments() {
     BumpAllocator allocator;
 
@@ -118,6 +126,19 @@ void created_blocks_respect_size_constant() {
     }
 }
 
+void destroys_non_trivial_objects() {
+    bool destroyed = false;
+
+    {
+        BumpAllocator allocator;
+        allocator.create<DestructionTracked>(&destroyed);
+    }
+
+    if (!destroyed) {
+        fail("allocator did not destroy a non-trivial object");
+    }
+}
+
 } // namespace
 
 int main() {
@@ -126,6 +147,7 @@ int main() {
     respects_requested_type_alignment();
     handles_many_small_allocations();
     created_blocks_respect_size_constant();
+    destroys_non_trivial_objects();
 
     return EXIT_SUCCESS;
 }

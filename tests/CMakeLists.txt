@@ -16,3 +16,12 @@ target_include_directories(flux_allocator_tests
 
 add_test(NAME flux_allocator_tests COMMAND flux_allocator_tests)
 set_tests_properties(flux_allocator_tests PROPERTIES TIMEOUT 2)
+
+add_executable(flux_parser_tests
+    parser_tests.cpp)
+
+target_link_libraries(flux_parser_tests
+    PRIVATE
+        flux_parser)
+
+add_test(NAME flux_parser_tests COMMAND flux_parser_tests)
