@@ -71,7 +71,7 @@ void lexes_keywords_identifiers_and_literals() {
 }
 
 void lexes_operators_and_punctuation() {
-    expect_kinds("== = => -> != ! <= < >= > + - * / []{},.:;", {
+    expect_kinds("== = => -> != ! <= < >= > + - * / | []{},.:;", {
         TokenKind::DoubleEqual,
         TokenKind::Equal,
         TokenKind::BigArrow,
@@ -86,6 +86,7 @@ void lexes_operators_and_punctuation() {
         TokenKind::Minus,
         TokenKind::Star,
         TokenKind::Slash,
+        TokenKind::Pipe,
         TokenKind::LBracket,
         TokenKind::RBracket,
         TokenKind::LBrace,

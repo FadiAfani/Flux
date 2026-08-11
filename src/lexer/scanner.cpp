@@ -208,6 +208,10 @@ Token Scanner::scan_token() {
             t.kind = TokenKind::SemiColon;
             t.lexeme += advance();
             break;
+        case '|':
+            t.kind = TokenKind::Pipe;
+            t.lexeme += advance();
+            break;
         case '+':
             t.kind = TokenKind::Plus;
             t.lexeme += advance();

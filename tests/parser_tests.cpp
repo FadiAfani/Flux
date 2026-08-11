@@ -17,7 +17,9 @@ using flux::parser::Expr;
 using flux::parser::LiteralExpression;
 using flux::parser::Parser;
 using flux::parser::ParseResult;
+using flux::parser::TypeName;
 using flux::parser::UnaryExpression;
+using flux::parser::UnionType;
 
 namespace {
 
@@ -90,11 +92,37 @@ void parse_result_retains_arena_lifetime() {
   }
 }
 
+void parses_union_type() {
+  Parser parser({token(TokenKind::Identifier, "NotFound"),
+                 token(TokenKind::Pipe, "|", 9),
+                 token(TokenKind::Identifier, "Forbidden", 10),
+                 token(TokenKind::Pipe, "|", 19),
+                 token(TokenKind::Identifier, "DatabaseError", 20),
+                 token(TokenKind::EndOfFile, "", 33)});
+
+  auto *type = parser.parse_union_type();
+  if (type == nullptr || !std::holds_alternative<UnionType>(type->value)) {
+    fail("parser did not create a union type");
+  }
+
+  const auto &members = std::get<UnionType>(type->value).members;
+  if (members.size() != 3) {
+    fail("union type did not retain all members");
+  }
+
+  for (const auto *member : members) {
+    if (member == nullptr || !std::holds_alternative<TypeName>(member->value)) {
+      fail("union member was not parsed as a type name");
+    }
+  }
+}
+
 } // namespace
 
 int main() {
   creates_literal_in_arena();
   creates_recursive_unary_expression_in_arena();
   parse_result_retains_arena_lifetime();
+  parses_union_type();
   return EXIT_SUCCESS;
 }

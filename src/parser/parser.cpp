@@ -1,5 +1,9 @@
 #include "flux/parser/parser.hpp"
+#include "flux/lexer/token.hpp"
+#include "flux/parser/allocator.hpp"
+#include "flux/parser/node.hpp"
 
+#include <optional>
 #include <utility>
 
 namespace flux::parser {
@@ -18,6 +22,15 @@ Expr *make_expression(BumpAllocator &arena, SourceSpan span, Value value) {
   expression->span = span;
   expression->value = std::move(value);
   return expression;
+}
+
+template <typename Value>
+TypePtr make_type_expression(BumpAllocator &arena, SourceSpan span,
+                             Value value) {
+  auto *type = arena.create<TypeExpression>();
+  type->span = span;
+  type->value = std::move(value);
+  return type;
 }
 
 } // namespace
@@ -71,6 +84,26 @@ ParseResult Parser::parse() {
   return {.arena = arena_, .root = root, .errors = std::move(errors_)};
 }
 
+Program* Parser::parse_source_file() {
+    Program* prog = arena_->create<Program>();
+    prog->module = parse_module_declaration();
+
+    while (peek().kind == TokenKind::Import) {
+        auto import = parse_import_declaration();
+        prog->imports.push_back(import);
+    }
+
+    while (peek().kind != TokenKind::EndOfFile) {
+        std::optional<TopLevelDeclaration> tlDecl = parse_top_level_declaration();
+        if (tlDecl.has_value()) {
+            prog->declarations.push_back(tlDecl.value());
+        }
+    }
+
+    return prog;
+
+}
+
 Expr *Parser::parse_literal() {
   const Token &token = peek();
 
@@ -119,5 +152,58 @@ Expr *Parser::parse_expr() {
   }
   return parse_literal();
 }
+
+TypePtr Parser::parse_type_expression() { return parse_union_type(); }
+
+TypePtr Parser::parse_union_type() {
+  TypePtr first = parse_function_type();
+  if (first == nullptr) {
+    return nullptr;
+  }
+
+  std::vector<TypePtr> members = {first};
+  while (peek().kind == TokenKind::Pipe) {
+    advance();
+
+    TypePtr member = parse_function_type();
+    if (member == nullptr) {
+      return nullptr;
+    }
+    members.push_back(member);
+  }
+
+  if (members.size() == 1) {
+    return first;
+  }
+
+  SourceSpan span = {.start = first->span.start,
+                     .end = members.back()->span.end};
+  return make_type_expression(*arena_, span,
+                              UnionType{.members = std::move(members)});
+}
+
+TypePtr Parser::parse_function_type() {
+  if (peek().kind != TokenKind::Identifier) {
+    report_error(peek(), "expected a type");
+    return nullptr;
+  }
+
+  const Token &first = peek();
+  QualifiedName name;
+  name.parts.push_back(first);
+  advance();
+
+  while (peek().kind == TokenKind::Dot &&
+         peek_next().kind == TokenKind::Identifier) {
+    advance();
+    name.parts.push_back(peek());
+    advance();
+  }
+
+  SourceSpan span = {.start = first.location,
+                     .end = token_span(name.parts.back()).end};
+  return make_type_expression(*arena_, span, TypeName{.name = std::move(name)});
+}
+
 
 } // namespace flux::parser

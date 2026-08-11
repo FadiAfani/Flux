@@ -39,6 +39,7 @@ enum class TokenKind {
   Dot,
   Colon,
   SemiColon,
+  Pipe,
 
   // Special
   EndOfFile,
