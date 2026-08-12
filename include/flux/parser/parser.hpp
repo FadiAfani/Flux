@@ -31,6 +31,21 @@ private:
   std::vector<ParseError> errors_;
   std::shared_ptr<BumpAllocator> arena_;
   std::size_t cursor_ = 0;
+  bool stop_before_block_ = false;
+
+  const Token &current(std::size_t lookahead = 0) const;
+  const Token &previous() const;
+  bool is_at_end() const;
+  bool check(TokenKind kind, std::size_t lookahead = 0) const;
+  bool match(TokenKind kind);
+  bool expect(TokenKind kind, std::string message);
+  Token take(TokenKind kind, std::string message);
+  SourceSpan span_from(const Token &start) const;
+  void synchronize_declaration();
+  void synchronize_statement();
+  bool looks_like_assignment() const;
+  bool looks_like_kind_expression() const;
+  ExprPtr parse_nested_expression();
 
   void report_error(SourceSpan loc, std::string message);
   void report_error_with_span(const Token &start, const Token &end,

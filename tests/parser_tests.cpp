@@ -7,11 +7,13 @@
 #include <variant>
 #include <vector>
 
+#include "flux/lexer/scanner.hpp"
 #include "flux/parser/parser.hpp"
 
 using flux::SourceLocation;
 using flux::Token;
 using flux::TokenKind;
+using flux::lexer::Scanner;
 using flux::parser::BumpAllocator;
 using flux::parser::Expr;
 using flux::parser::ExternalFunctionDeclaration;
@@ -37,6 +39,15 @@ Token token(TokenKind kind, std::string lexeme, std::size_t offset = 0) {
           .lexeme = std::move(lexeme),
           .location = SourceLocation{
               .offset = offset, .line = 1, .column = offset + 1}};
+}
+
+ParseResult parse_source(std::string_view source) {
+  Scanner scanner(source);
+  auto scanned = scanner.scan();
+  if (!scanned.errors.empty()) {
+    fail("integration source did not lex cleanly");
+  }
+  return Parser(std::move(scanned.tokens)).parse();
 }
 
 void creates_literal_in_arena() {
@@ -251,6 +262,81 @@ void dispatches_type_alias_declaration() {
   }
 }
 
+void parses_representative_grammar_end_to_end() {
+  constexpr std::string_view source = R"(
+module app.core;
+import std.collections.{List, Map as Dictionary};
+import std.io as io;
+
+pub const Limit: Int = 10;
+type Positive = Int where self > 0;
+type NamedRow = { name: String | R };
+pub type User { pub id: Int; invariant Valid: id >= 0; }
+type Option<T> = Some(T) | None;
+
+effect Database { capability Read; capability Write; }
+trusted external fn load(id: Int) -> User uses Database.Read;
+
+trait Eq<T: Type> {
+  fn eq(a: T, b: T) -> Bool uses Database.Read;
+  law reflexive: forall x: T { eq(x, x) == eq(x, x) };
+}
+
+impl Eq<User> {
+  fn eq(a: User, b: User) -> Bool { a.id == b.id }
+}
+
+domain Rules { invariant Always: true; }
+
+pub fn run<T: Type, F: (Type -> Type)>(items: List<T>) -> Int
+  requires Limit > 0;
+  ensures result >= 0;
+  ensures old(result) <= result;
+  uses Database.Read;
+{
+  let first = items[0]?;
+  let factory = identity<T>;
+  var count: Int = 0;
+  while count < Limit { count += 1; }
+  for item in items { consume(item); }
+  mutate first { first.id = 2; }
+  transaction db { save(first)?; }
+  parallel { consume(first); }
+  unsafe { raw(first); }
+  let user = User<Int> { id: count };
+  let changed = user with { id = count + 1 };
+  if valid(User<Int> { id: count }) { consume(first); };
+  let value = match Some(count) {
+    Some(x) if x > 0 => x,
+    None => 0,
+  };
+  value
+}
+)";
+
+  ParseResult result = parse_source(source);
+  if (result.root == nullptr || !result.errors.empty()) {
+    if (!result.errors.empty()) {
+      std::cerr << "unexpected parser error: " << result.errors.front().message
+                << '\n';
+    }
+    fail("representative grammar source did not parse cleanly");
+  }
+  if (result.root->module == nullptr || result.root->imports.size() != 2 ||
+      result.root->declarations.size() != 11) {
+    fail("representative grammar source lost declarations");
+  }
+}
+
+void recovers_at_the_next_top_level_declaration() {
+  ParseResult result =
+      parse_source("const broken = ; pub const recovered: Int = 1;");
+  if (result.errors.empty() || result.root == nullptr ||
+      result.root->declarations.size() != 1) {
+    fail("parser did not recover after a malformed declaration");
+  }
+}
+
 } // namespace
 
 int main() {
@@ -264,5 +350,7 @@ int main() {
   parses_function_declaration_with_shared_signature();
   rejects_failed_generic_parameter_in_type_declaration();
   dispatches_type_alias_declaration();
+  parses_representative_grammar_end_to_end();
+  recovers_at_the_next_top_level_declaration();
   return EXIT_SUCCESS;
 }

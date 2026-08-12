@@ -19,7 +19,9 @@ target_include_directories(flux_lexer
         ${FLUX_INCLUDE_DIR})
 
 add_library(flux_parser
-    src/parser/parser.cpp)
+    src/parser/parser.cpp
+    src/parser/expression_parser.cpp
+    src/parser/specification_parser.cpp)
 
 target_include_directories(flux_parser
     PUBLIC

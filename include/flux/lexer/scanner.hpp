@@ -5,35 +5,57 @@
 #include <unordered_map>
 #include <vector>
 
-#include "./token.hpp"
+#include "token.hpp"
 
 namespace flux::lexer {
 
 inline const std::unordered_map<std::string_view, TokenKind> keywords = {
-    {"fn", TokenKind::KwFn},
-    {"module", TokenKind::KwModule},
-    {"import", TokenKind::KwImport},
-    {"pub", TokenKind::KwPub},
-    {"trusted", TokenKind::KwTrusted},
-    {"external", TokenKind::KwExternal},
-    {"total", TokenKind::KwTotal},
-    {"mut", TokenKind::KwMut},
-    {"requires", TokenKind::KwRequires},
+    {"as", TokenKind::KwAs},
+    {"break", TokenKind::KwBreak},
+    {"capability", TokenKind::KwCapability},
+    {"const", TokenKind::KwConst},
+    {"continue", TokenKind::KwContinue},
+    {"domain", TokenKind::KwDomain},
+    {"effect", TokenKind::KwEffect},
+    {"else", TokenKind::KwElse},
     {"ensures", TokenKind::KwEnsures},
-    {"uses", TokenKind::KwUses},
-    {"if", TokenKind::KwIf},
-    {"for", TokenKind::KwFor},
-    {"while", TokenKind::KwWhile},
-    {"trait", TokenKind::KwTrait},
-    {"apply", TokenKind::KwApply},
-    {"to", TokenKind::KwTo},
+    {"exists", TokenKind::KwExists},
+    {"external", TokenKind::KwExternal},
     {"false", TokenKind::KwFalse},
-    {"true", TokenKind::KwTrue},
-    {"var", TokenKind::KwVar},
-    {"struct", TokenKind::KwStruct},
-    {"type", TokenKind::KwType},
-    {"return", TokenKind::KwReturn},
+    {"fn", TokenKind::KwFn},
+    {"for", TokenKind::KwFor},
+    {"forall", TokenKind::KwForall},
+    {"if", TokenKind::KwIf},
+    {"impl", TokenKind::KwImpl},
+    {"import", TokenKind::KwImport},
+    {"in", TokenKind::KwIn},
+    {"invariant", TokenKind::KwInvariant},
+    {"law", TokenKind::KwLaw},
+    {"let", TokenKind::KwLet},
     {"match", TokenKind::KwMatch},
+    {"module", TokenKind::KwModule},
+    {"mut", TokenKind::KwMut},
+    {"mutate", TokenKind::KwMutate},
+    {"old", TokenKind::KwOld},
+    {"parallel", TokenKind::KwParallel},
+    {"pub", TokenKind::KwPub},
+    {"requires", TokenKind::KwRequires},
+    {"result", TokenKind::KwResult},
+    {"return", TokenKind::KwReturn},
+    {"self", TokenKind::KwSelf},
+    {"total", TokenKind::KwTotal},
+    {"trait", TokenKind::KwTrait},
+    {"transaction", TokenKind::KwTransaction},
+    {"true", TokenKind::KwTrue},
+    {"trusted", TokenKind::KwTrusted},
+    {"type", TokenKind::KwType},
+    {"unsafe", TokenKind::KwUnsafe},
+    {"uses", TokenKind::KwUses},
+    {"var", TokenKind::KwVar},
+    {"where", TokenKind::KwWhere},
+    {"while", TokenKind::KwWhile},
+    {"with", TokenKind::KwWith},
+    {"Type", TokenKind::KwKindType},
 };
 
 struct LexError {
@@ -49,7 +71,6 @@ struct ScanResult {
 class Scanner {
 public:
   explicit Scanner(std::string_view source);
-
   ScanResult scan();
 
 private:
@@ -57,7 +78,6 @@ private:
   std::size_t cursor_ = 0;
   std::size_t line_ = 1;
   std::size_t column_ = 1;
-
   std::vector<Token> tokens_;
   std::vector<LexError> errors_;
 
@@ -66,13 +86,15 @@ private:
   char peek_next() const;
   char advance();
   bool match(char expected);
-  void skip_whitespace();
+  void skip_trivia();
+  void skip_block_comment(SourceLocation start);
+  void report(SourceLocation start, std::string message);
 
   Token scan_token();
   Token scan_identifier_or_keyword();
   Token scan_number();
-  Token scan_string();
-  inline Token init_token(TokenKind kind);
+  Token scan_quoted(char quote, TokenKind kind);
+  Token init_token(TokenKind kind) const;
 };
 
 } // namespace flux::lexer
