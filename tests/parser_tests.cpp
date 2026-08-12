@@ -14,7 +14,10 @@ using flux::Token;
 using flux::TokenKind;
 using flux::parser::BumpAllocator;
 using flux::parser::Expr;
+using flux::parser::ExternalFunctionDeclaration;
+using flux::parser::FunctionDeclaration;
 using flux::parser::LiteralExpression;
+using flux::parser::ModuleDeclaration;
 using flux::parser::Parser;
 using flux::parser::ParseResult;
 using flux::parser::TypeName;
@@ -117,6 +120,98 @@ void parses_union_type() {
   }
 }
 
+void parses_optional_module_declaration() {
+  Parser parser({token(TokenKind::KwModule, "module"),
+                 token(TokenKind::Identifier, "booking", 7),
+                 token(TokenKind::Dot, ".", 14),
+                 token(TokenKind::Identifier, "service", 15),
+                 token(TokenKind::SemiColon, ";", 22),
+                 token(TokenKind::EndOfFile, "", 23)});
+
+  ModuleDeclaration *module = parser.parse_module_declaration();
+  if (module == nullptr || module->name.parts.size() != 2 ||
+      module->name.parts[0].lexeme != "booking" ||
+      module->name.parts[1].lexeme != "service") {
+    fail("parser did not create the expected module declaration");
+  }
+
+  Parser parser_without_module({token(TokenKind::EndOfFile, "")});
+  if (parser_without_module.parse_module_declaration() != nullptr) {
+    fail("optional module parser accepted a missing declaration");
+  }
+}
+
+void parses_source_file_module_and_imports() {
+  Parser parser({token(TokenKind::KwModule, "module"),
+                 token(TokenKind::Identifier, "app", 7),
+                 token(TokenKind::SemiColon, ";", 10),
+                 token(TokenKind::KwImport, "import", 12),
+                 token(TokenKind::Identifier, "std", 19),
+                 token(TokenKind::Dot, ".", 22),
+                 token(TokenKind::Identifier, "collections", 23),
+                 token(TokenKind::SemiColon, ";", 34),
+                 token(TokenKind::EndOfFile, "", 35)});
+
+  ParseResult result = parser.parse();
+  auto *source = result.root;
+  if (source == nullptr || source->module == nullptr ||
+      source->imports.size() != 1 ||
+      source->imports[0]->name.parts.size() != 2) {
+    fail("source file did not retain its module and imports");
+  }
+}
+
+void parses_external_function_declaration_with_token_kinds() {
+  Parser parser(
+      {token(TokenKind::KwPub, "pub"),
+       token(TokenKind::KwTrusted, "trusted", 4),
+       token(TokenKind::KwExternal, "external", 12),
+       token(TokenKind::KwFn, "fn", 21),
+       token(TokenKind::Identifier, "os_read", 24),
+       token(TokenKind::LParen, "(", 31),
+       token(TokenKind::Identifier, "buffer", 32),
+       token(TokenKind::Colon, ":", 38), token(TokenKind::KwMut, "mut", 40),
+       token(TokenKind::Identifier, "Buffer", 44),
+       token(TokenKind::RParen, ")", 50), token(TokenKind::Arrow, "->", 52),
+       token(TokenKind::Identifier, "UInt64", 55),
+       token(TokenKind::SemiColon, ";", 61),
+       token(TokenKind::EndOfFile, "", 62)});
+
+  ExternalFunctionDeclaration *declaration =
+      parser.parse_external_function_declaration();
+  if (declaration == nullptr || !declaration->is_public ||
+      !declaration->is_trusted ||
+      declaration->signature.name.lexeme != "os_read" ||
+      declaration->signature.parameters.size() != 1 ||
+      !declaration->signature.parameters[0].is_mutable ||
+      declaration->signature.return_type == nullptr) {
+    fail("parser did not create the expected external function declaration");
+  }
+}
+
+void parses_function_declaration_with_shared_signature() {
+  Parser parser(
+      {token(TokenKind::KwPub, "pub"), token(TokenKind::KwTotal, "total", 4),
+       token(TokenKind::KwFn, "fn", 10),
+       token(TokenKind::Identifier, "answer", 13),
+       token(TokenKind::LParen, "(", 19), token(TokenKind::RParen, ")", 20),
+       token(TokenKind::Arrow, "->", 22),
+       token(TokenKind::Identifier, "Int", 25),
+       token(TokenKind::LBrace, "{", 29),
+       token(TokenKind::IntegerLiteral, "42", 31),
+       token(TokenKind::RBrace, "}", 34), token(TokenKind::EndOfFile, "", 35)});
+
+  FunctionDeclaration *declaration = parser.parse_function_declaration();
+  if (declaration == nullptr || !declaration->is_public ||
+      !declaration->is_total ||
+      declaration->signature.name.lexeme != "answer" ||
+      declaration->signature.return_type == nullptr ||
+      declaration->body == nullptr ||
+      declaration->body->tail_expression == nullptr) {
+    fail("parser did not create the expected function declaration");
+  }
+}
+
 } // namespace
 
 int main() {
@@ -124,5 +219,9 @@ int main() {
   creates_recursive_unary_expression_in_arena();
   parse_result_retains_arena_lifetime();
   parses_union_type();
+  parses_optional_module_declaration();
+  parses_source_file_module_and_imports();
+  parses_external_function_declaration_with_token_kinds();
+  parses_function_declaration_with_shared_signature();
   return EXIT_SUCCESS;
 }

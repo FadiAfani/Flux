@@ -11,6 +11,16 @@ namespace flux::lexer {
 
 inline const std::unordered_map<std::string_view, TokenKind> keywords = {
     {"fn", TokenKind::KwFn},
+    {"module", TokenKind::KwModule},
+    {"import", TokenKind::KwImport},
+    {"pub", TokenKind::KwPub},
+    {"trusted", TokenKind::KwTrusted},
+    {"external", TokenKind::KwExternal},
+    {"total", TokenKind::KwTotal},
+    {"mut", TokenKind::KwMut},
+    {"requires", TokenKind::KwRequires},
+    {"ensures", TokenKind::KwEnsures},
+    {"uses", TokenKind::KwUses},
     {"if", TokenKind::KwIf},
     {"for", TokenKind::KwFor},
     {"while", TokenKind::KwWhile},

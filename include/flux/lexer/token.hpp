@@ -8,6 +8,16 @@ namespace flux {
 enum class TokenKind {
   // Keywords
   KwFn,
+  KwModule,
+  KwImport,
+  KwPub,
+  KwTrusted,
+  KwExternal,
+  KwTotal,
+  KwMut,
+  KwRequires,
+  KwEnsures,
+  KwUses,
   KwIf,
   KwFor,
   KwWhile,
@@ -31,6 +41,8 @@ enum class TokenKind {
   // Punctuation
   LBracket,
   RBracket,
+  LParen,
+  RParen,
   LBrace,
   RBrace,
   Arrow,

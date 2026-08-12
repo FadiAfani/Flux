@@ -36,6 +36,7 @@ private:
   void report_error_with_span(const Token &start, const Token &end,
                               std::string message);
   void report_error(const Token &start, std::string message);
+  std::optional<FunctionSignature> parse_function_signature();
 
 public:
   explicit Parser(std::vector<Token> tokens);

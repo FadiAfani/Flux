@@ -184,6 +184,14 @@ Token Scanner::scan_token() {
             t.kind = TokenKind::RBracket;
             t.lexeme += advance();
             break;
+        case '(':
+            t.kind = TokenKind::LParen;
+            t.lexeme += advance();
+            break;
+        case ')':
+            t.kind = TokenKind::RParen;
+            t.lexeme += advance();
+            break;
         case '{':
             t.kind = TokenKind::LBrace;
             t.lexeme += advance();

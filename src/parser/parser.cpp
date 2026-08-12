@@ -75,33 +75,360 @@ void Parser::report_error(const Token &start, std::string message) {
 }
 
 ParseResult Parser::parse() {
-  auto *root = arena_->create<Program>();
-  root->span = token_span(tokens_.front());
-  if (tokens_.size() > 1) {
-    root->span.end = token_span(tokens_.back()).end;
-  }
+  Program *root = parse_source_file();
 
   return {.arena = arena_, .root = root, .errors = std::move(errors_)};
 }
 
-Program* Parser::parse_source_file() {
-    Program* prog = arena_->create<Program>();
-    prog->module = parse_module_declaration();
+Program *Parser::parse_source_file() {
+  Program *prog = arena_->create<Program>();
+  prog->module = parse_module_declaration();
 
-    while (peek().kind == TokenKind::Import) {
-        auto import = parse_import_declaration();
-        prog->imports.push_back(import);
+  while (peek().kind == TokenKind::KwImport) {
+    auto import = parse_import_declaration();
+    if (import != nullptr) {
+      prog->imports.push_back(import);
+    }
+  }
+
+  while (peek().kind != TokenKind::EndOfFile) {
+    const std::size_t start = cursor_;
+    std::optional<TopLevelDeclaration> tlDecl = parse_top_level_declaration();
+    if (tlDecl.has_value()) {
+      prog->declarations.push_back(tlDecl.value());
+    }
+    if (cursor_ == start) {
+      advance();
+    }
+  }
+
+  prog->span = {.start = tokens_.front().location,
+                .end = token_span(tokens_.back()).end};
+
+  return prog;
+}
+
+QualifiedName Parser::parse_qualified_name() {
+  QualifiedName name;
+  if (peek().kind != TokenKind::Identifier) {
+    report_error(peek(), "expected an identifier");
+    return name;
+  }
+
+  name.parts.push_back(peek());
+  advance();
+
+  while (peek().kind == TokenKind::Dot) {
+    advance();
+    if (peek().kind != TokenKind::Identifier) {
+      report_error(peek(), "expected an identifier after '.'");
+      return {};
     }
 
-    while (peek().kind != TokenKind::EndOfFile) {
-        std::optional<TopLevelDeclaration> tlDecl = parse_top_level_declaration();
-        if (tlDecl.has_value()) {
-            prog->declarations.push_back(tlDecl.value());
+    name.parts.push_back(peek());
+    advance();
+  }
+
+  return name;
+}
+
+ModuleDeclaration *Parser::parse_module_declaration() {
+  if (peek().kind != TokenKind::KwModule) {
+    return nullptr;
+  }
+
+  const Token start = peek();
+  advance();
+
+  QualifiedName name = parse_qualified_name();
+  if (name.parts.empty()) {
+    return nullptr;
+  }
+
+  if (peek().kind != TokenKind::SemiColon) {
+    report_error(peek(), "expected ';' after module declaration");
+    return nullptr;
+  }
+
+  const Token end = peek();
+  advance();
+
+  auto *declaration = arena_->create<ModuleDeclaration>();
+  declaration->span = {.start = start.location, .end = token_span(end).end};
+  declaration->name = std::move(name);
+  return declaration;
+}
+
+ImportDeclaration *Parser::parse_import_declaration() {
+  if (peek().kind != TokenKind::KwImport) {
+    return nullptr;
+  }
+
+  const Token start = peek();
+  advance();
+
+  QualifiedName name = parse_qualified_name();
+  if (name.parts.empty()) {
+    return nullptr;
+  }
+
+  if (peek().kind != TokenKind::SemiColon) {
+    report_error(peek(), "expected ';' after import declaration");
+    return nullptr;
+  }
+
+  const Token end = peek();
+  advance();
+
+  auto *declaration = arena_->create<ImportDeclaration>();
+  declaration->span = {.start = start.location, .end = token_span(end).end};
+  declaration->name = std::move(name);
+  return declaration;
+}
+
+std::optional<TopLevelDeclaration> Parser::parse_top_level_declaration() {
+  std::size_t index = cursor_;
+  if (tokens_[index].kind == TokenKind::KwPub) {
+    ++index;
+  }
+
+  if (index < tokens_.size() &&
+      (tokens_[index].kind == TokenKind::KwTrusted ||
+       tokens_[index].kind == TokenKind::KwExternal)) {
+    if (auto *declaration = parse_external_function_declaration()) {
+      return TopLevelDeclaration{declaration};
+    }
+    return std::nullopt;
+  }
+
+  if (index < tokens_.size() && (tokens_[index].kind == TokenKind::KwTotal ||
+                                 tokens_[index].kind == TokenKind::KwFn)) {
+    if (auto *declaration = parse_function_declaration()) {
+      return TopLevelDeclaration{declaration};
+    }
+    return std::nullopt;
+  }
+
+  report_error(peek(), "expected a top-level declaration");
+  return std::nullopt;
+}
+
+std::optional<FunctionSignature> Parser::parse_function_signature() {
+  if (peek().kind != TokenKind::KwFn) {
+    report_error(peek(), "expected 'fn'");
+    return std::nullopt;
+  }
+  advance();
+
+  if (peek().kind != TokenKind::Identifier) {
+    report_error(peek(), "expected function name");
+    return std::nullopt;
+  }
+
+  FunctionSignature signature;
+  signature.name = peek();
+  advance();
+
+  if (peek().kind == TokenKind::Less) {
+    advance();
+    while (true) {
+      if (peek().kind != TokenKind::Identifier) {
+        report_error(peek(), "expected generic parameter name");
+        return std::nullopt;
+      }
+
+      GenericParameter parameter;
+      parameter.name = peek();
+      advance();
+
+      if (peek().kind == TokenKind::Colon) {
+        advance();
+        TypePtr domain = parse_type_expression();
+        if (domain == nullptr) {
+          return std::nullopt;
         }
+        parameter.domain = domain;
+      }
+
+      signature.generic_parameters.push_back(std::move(parameter));
+      if (peek().kind != TokenKind::Comma) {
+        break;
+      }
+      advance();
     }
 
-    return prog;
+    if (peek().kind != TokenKind::Greater) {
+      report_error(peek(), "expected '>' after generic parameters");
+      return std::nullopt;
+    }
+    advance();
+  }
 
+  if (peek().kind != TokenKind::LParen) {
+    report_error(peek(), "expected '(' after function name");
+    return std::nullopt;
+  }
+  advance();
+
+  if (peek().kind != TokenKind::RParen) {
+    while (true) {
+      if (peek().kind != TokenKind::Identifier) {
+        report_error(peek(), "expected parameter name");
+        return std::nullopt;
+      }
+
+      Parameter parameter;
+      parameter.name = peek();
+      advance();
+
+      if (peek().kind != TokenKind::Colon) {
+        report_error(peek(), "expected ':' after parameter name");
+        return std::nullopt;
+      }
+      advance();
+
+      parameter.is_mutable = peek().kind == TokenKind::KwMut;
+      if (parameter.is_mutable) {
+        advance();
+      }
+
+      parameter.type = parse_type_expression();
+      if (parameter.type == nullptr) {
+        return std::nullopt;
+      }
+      signature.parameters.push_back(std::move(parameter));
+
+      if (peek().kind != TokenKind::Comma) {
+        break;
+      }
+      advance();
+    }
+  }
+
+  if (peek().kind != TokenKind::RParen) {
+    report_error(peek(), "expected ')' after parameters");
+    return std::nullopt;
+  }
+  advance();
+
+  if (peek().kind == TokenKind::Arrow) {
+    advance();
+    signature.return_type = parse_type_expression();
+    if (signature.return_type == nullptr) {
+      return std::nullopt;
+    }
+  }
+
+  if (peek().kind == TokenKind::KwRequires ||
+      peek().kind == TokenKind::KwEnsures || peek().kind == TokenKind::KwUses) {
+    report_error(peek(), "function clauses are not implemented");
+    return std::nullopt;
+  }
+
+  return signature;
+}
+
+bool Parser::parse_visibility() {
+  if (peek().kind != TokenKind::KwPub) {
+    return false;
+  }
+  advance();
+  return true;
+}
+
+FunctionDeclaration *Parser::parse_function_declaration() {
+  const Token start = peek();
+  const bool visible = parse_visibility();
+
+  const bool total = peek().kind == TokenKind::KwTotal;
+  if (total) {
+    advance();
+  }
+
+  auto signature = parse_function_signature();
+  if (!signature.has_value()) {
+    return nullptr;
+  }
+
+  BlockPtr body = parse_block();
+  if (body == nullptr) {
+    return nullptr;
+  }
+
+  auto *declaration = arena_->create<FunctionDeclaration>();
+  declaration->span = {.start = start.location, .end = body->span.end};
+  declaration->is_public = visible;
+  declaration->is_total = total;
+  declaration->signature = std::move(signature.value());
+  declaration->body = body;
+  return declaration;
+}
+
+ExternalFunctionDeclaration *Parser::parse_external_function_declaration() {
+  const Token start = peek();
+  const bool visible = parse_visibility();
+
+  const bool trusted = peek().kind == TokenKind::KwTrusted;
+  if (trusted) {
+    advance();
+  }
+
+  if (peek().kind != TokenKind::KwExternal) {
+    report_error(peek(), "expected 'external'");
+    return nullptr;
+  }
+  advance();
+
+  auto signature = parse_function_signature();
+  if (!signature.has_value()) {
+    return nullptr;
+  }
+
+  if (peek().kind != TokenKind::SemiColon) {
+    report_error(peek(), "expected ';' after external function declaration");
+    return nullptr;
+  }
+
+  const Token end = peek();
+  advance();
+
+  auto *declaration = arena_->create<ExternalFunctionDeclaration>();
+  declaration->span = {.start = start.location, .end = token_span(end).end};
+  declaration->is_public = visible;
+  declaration->is_trusted = trusted;
+  declaration->signature = std::move(signature.value());
+  return declaration;
+}
+
+BlockPtr Parser::parse_block() {
+  if (peek().kind != TokenKind::LBrace) {
+    report_error(peek(), "expected function body");
+    return nullptr;
+  }
+
+  const Token start = peek();
+  advance();
+
+  ExprPtr tail = nullptr;
+  if (peek().kind != TokenKind::RBrace) {
+    tail = parse_expr();
+    if (tail == nullptr) {
+      return nullptr;
+    }
+  }
+
+  if (peek().kind != TokenKind::RBrace) {
+    report_error(peek(), "expected '}' after function body");
+    return nullptr;
+  }
+
+  const Token end = peek();
+  advance();
+
+  auto *block = arena_->create<Block>();
+  block->span = {.start = start.location, .end = token_span(end).end};
+  block->tail_expression = tail;
+  return block;
 }
 
 Expr *Parser::parse_literal() {
@@ -204,6 +531,5 @@ TypePtr Parser::parse_function_type() {
                      .end = token_span(name.parts.back()).end};
   return make_type_expression(*arena_, span, TypeName{.name = std::move(name)});
 }
-
 
 } // namespace flux::parser

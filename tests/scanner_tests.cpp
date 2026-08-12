@@ -70,8 +70,24 @@ void lexes_keywords_identifiers_and_literals() {
     }
 }
 
+void lexes_module_keywords() {
+    expect_kinds("module import pub trusted external total mut requires ensures uses", {
+        TokenKind::KwModule,
+        TokenKind::KwImport,
+        TokenKind::KwPub,
+        TokenKind::KwTrusted,
+        TokenKind::KwExternal,
+        TokenKind::KwTotal,
+        TokenKind::KwMut,
+        TokenKind::KwRequires,
+        TokenKind::KwEnsures,
+        TokenKind::KwUses,
+        TokenKind::EndOfFile,
+    });
+}
+
 void lexes_operators_and_punctuation() {
-    expect_kinds("== = => -> != ! <= < >= > + - * / | []{},.:;", {
+    expect_kinds("== = => -> != ! <= < >= > + - * / | [](){},.:;", {
         TokenKind::DoubleEqual,
         TokenKind::Equal,
         TokenKind::BigArrow,
@@ -89,6 +105,8 @@ void lexes_operators_and_punctuation() {
         TokenKind::Pipe,
         TokenKind::LBracket,
         TokenKind::RBracket,
+        TokenKind::LParen,
+        TokenKind::RParen,
         TokenKind::LBrace,
         TokenKind::RBrace,
         TokenKind::Comma,
@@ -148,6 +166,7 @@ void reports_unterminated_strings() {
 
 int main() {
     lexes_keywords_identifiers_and_literals();
+    lexes_module_keywords();
     lexes_operators_and_punctuation();
     tracks_locations_after_whitespace();
     reports_unexpected_characters();
