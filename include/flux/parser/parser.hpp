@@ -70,7 +70,7 @@ public:
   EffectReference parse_effect_reference();
 
   std::vector<GenericParameter> parse_generic_parameter_list();
-  GenericParameter parse_generic_parameter();
+  std::optional<GenericParameter> parse_generic_parameter();
   std::variant<KindPtr, TypePtr> parse_generic_domain();
   KindPtr parse_kind_expression();
   KindPtr parse_kind_arrow_expression();

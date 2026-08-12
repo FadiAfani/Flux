@@ -20,6 +20,7 @@ using flux::parser::LiteralExpression;
 using flux::parser::ModuleDeclaration;
 using flux::parser::Parser;
 using flux::parser::ParseResult;
+using flux::parser::TypeAliasDeclaration;
 using flux::parser::TypeName;
 using flux::parser::UnaryExpression;
 using flux::parser::UnionType;
@@ -212,6 +213,44 @@ void parses_function_declaration_with_shared_signature() {
   }
 }
 
+void rejects_failed_generic_parameter_in_type_declaration() {
+  Parser parser(
+      {token(TokenKind::KwType, "type"), token(TokenKind::Identifier, "Box", 5),
+       token(TokenKind::Less, "<", 8), token(TokenKind::Identifier, "T", 9),
+       token(TokenKind::Comma, ",", 10), token(TokenKind::Greater, ">", 11),
+       token(TokenKind::Equal, "=", 13),
+       token(TokenKind::Identifier, "Int", 15),
+       token(TokenKind::SemiColon, ";", 18),
+       token(TokenKind::EndOfFile, "", 19)});
+
+  if (parser.parse_type_declaration().has_value()) {
+    fail("type declaration accepted a failed generic parameter");
+  }
+}
+
+void dispatches_type_alias_declaration() {
+  Parser parser(
+      {token(TokenKind::KwPub, "pub"), token(TokenKind::KwType, "type", 4),
+       token(TokenKind::Identifier, "Box", 9), token(TokenKind::Less, "<", 12),
+       token(TokenKind::Identifier, "T", 13),
+       token(TokenKind::Greater, ">", 14), token(TokenKind::Equal, "=", 16),
+       token(TokenKind::Identifier, "T", 18),
+       token(TokenKind::SemiColon, ";", 19),
+       token(TokenKind::EndOfFile, "", 20)});
+
+  auto result = parser.parse_type_declaration();
+  if (!result.has_value() ||
+      !std::holds_alternative<TypeAliasDeclaration *>(result.value())) {
+    fail("type declaration did not dispatch to the alias parser");
+  }
+
+  auto *alias = std::get<TypeAliasDeclaration *>(result.value());
+  if (alias == nullptr || !alias->is_public || alias->name.lexeme != "Box" ||
+      alias->generic_parameters.size() != 1 || alias->type == nullptr) {
+    fail("type alias parser did not retain the parsed declaration");
+  }
+}
+
 } // namespace
 
 int main() {
@@ -223,5 +262,7 @@ int main() {
   parses_source_file_module_and_imports();
   parses_external_function_declaration_with_token_kinds();
   parses_function_declaration_with_shared_signature();
+  rejects_failed_generic_parameter_in_type_declaration();
+  dispatches_type_alias_declaration();
   return EXIT_SUCCESS;
 }

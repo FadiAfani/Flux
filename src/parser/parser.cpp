@@ -400,6 +400,152 @@ ExternalFunctionDeclaration *Parser::parse_external_function_declaration() {
   return declaration;
 }
 
+std::optional<TypeDeclaration> Parser::parse_type_declaration() {
+  std::size_t index = cursor_;
+  if (tokens_[index].kind == TokenKind::KwPub) {
+    ++index;
+  }
+
+  if (index >= tokens_.size() || tokens_[index].kind != TokenKind::KwType) {
+    report_error(peek(), "expected 'type'");
+    return std::nullopt;
+  }
+  ++index;
+
+  if (index >= tokens_.size() || tokens_[index].kind != TokenKind::Identifier) {
+    report_error(peek(), "expected type name");
+    return std::nullopt;
+  }
+  ++index;
+
+  if (index < tokens_.size() && tokens_[index].kind == TokenKind::Less) {
+    std::size_t depth = 0;
+    do {
+      if (tokens_[index].kind == TokenKind::Less) {
+        ++depth;
+      } else if (tokens_[index].kind == TokenKind::Greater) {
+        --depth;
+      }
+      ++index;
+    } while (index < tokens_.size() && depth != 0);
+
+    if (depth != 0) {
+      report_error(peek(), "expected '>' after generic parameters");
+      return std::nullopt;
+    }
+  }
+
+  if (index < tokens_.size() && tokens_[index].kind == TokenKind::Equal) {
+    auto *alias = parse_type_alias_declaration();
+    if (alias == nullptr) {
+      return std::nullopt;
+    }
+    return TypeDeclaration{alias};
+  }
+
+  if (index < tokens_.size() && tokens_[index].kind == TokenKind::LBrace) {
+    report_error(tokens_[index],
+                 "record type declarations are not implemented");
+    return std::nullopt;
+  }
+
+  report_error(index < tokens_.size() ? tokens_[index] : tokens_.back(),
+               "expected '=' or '{' after type name");
+  return std::nullopt;
+}
+
+TypeAliasDeclaration *Parser::parse_type_alias_declaration() {
+  const Token start = peek();
+  const bool visible = parse_visibility();
+
+  if (peek().kind != TokenKind::KwType) {
+    report_error(peek(), "expected 'type'");
+    return nullptr;
+  }
+  advance();
+
+  if (peek().kind != TokenKind::Identifier) {
+    report_error(peek(), "expected type name");
+    return nullptr;
+  }
+  const Token name = peek();
+  advance();
+
+  std::vector<GenericParameter> generic_parameters;
+  if (peek().kind == TokenKind::Less) {
+    advance();
+
+    auto first = parse_generic_parameter();
+    if (!first.has_value()) {
+      return nullptr;
+    }
+    generic_parameters.push_back(std::move(first.value()));
+
+    while (peek().kind == TokenKind::Comma) {
+      advance();
+      auto parameter = parse_generic_parameter();
+      if (!parameter.has_value()) {
+        return nullptr;
+      }
+      generic_parameters.push_back(std::move(parameter.value()));
+    }
+
+    if (peek().kind != TokenKind::Greater) {
+      report_error(peek(), "expected '>' after generic parameters");
+      return nullptr;
+    }
+    advance();
+  }
+
+  if (peek().kind != TokenKind::Equal) {
+    report_error(peek(), "expected '=' in type alias");
+    return nullptr;
+  }
+  advance();
+
+  TypePtr type = parse_type_expression();
+  if (type == nullptr) {
+    return nullptr;
+  }
+
+  if (peek().kind != TokenKind::SemiColon) {
+    report_error(peek(), "expected ';' after type alias");
+    return nullptr;
+  }
+  const Token end = peek();
+  advance();
+
+  auto *declaration = arena_->create<TypeAliasDeclaration>();
+  declaration->span = {.start = start.location, .end = token_span(end).end};
+  declaration->is_public = visible;
+  declaration->name = name;
+  declaration->generic_parameters = std::move(generic_parameters);
+  declaration->type = type;
+  return declaration;
+}
+
+std::optional<GenericParameter> Parser::parse_generic_parameter() {
+  if (peek().kind != TokenKind::Identifier) {
+    report_error(peek(), "expected generic parameter name");
+    return std::nullopt;
+  }
+
+  GenericParameter parameter;
+  parameter.name = peek();
+  advance();
+
+  if (peek().kind == TokenKind::Colon) {
+    advance();
+    TypePtr domain = parse_type_expression();
+    if (domain == nullptr) {
+      return std::nullopt;
+    }
+    parameter.domain = domain;
+  }
+
+  return parameter;
+}
+
 BlockPtr Parser::parse_block() {
   if (peek().kind != TokenKind::LBrace) {
     report_error(peek(), "expected function body");
