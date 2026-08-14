@@ -1,53 +1,89 @@
+#pragma once
+
 #include "flux/lexer/token.hpp"
+
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <unordered_map>
+#include <variant>
 #include <vector>
-namespace  SemanticAnalysis {
 
-    using ScopeId = uint32_t;
-    using NameId = uint32_t;
-    using SymbolId = uint32_t;
+namespace flux::semantic_analysis {
 
-    enum class SymbolKind {
-        Module,
-        Import,
-        Constant,
-        Function,
-        ExternalFunction,
-        Type,
-        Trait,
-        GenericParameter,
-        Effect,
-        Capability,
-        Domain,
-        Parameter,
-        Local,
-        Variant,
-        Field,
-    };
+using ScopeId = std::uint32_t;
+using NameId = std::uint32_t;
+using SymbolTableId = std::uint32_t;
 
-    struct Symbol {
-        ScopeId scope;
-        SymbolKind kind;
-        NameId name;
-        flux::SourceSpan decl_span;
-        bool is_public = false;
-    };
+struct SymbolId {
+  std::uint32_t value = 0;
+  friend bool operator==(SymbolId, SymbolId) = default;
+};
 
-    struct Scope {
-        std::optional<ScopeId> parent;
-        std::unordered_map<NameId, SymbolId> symbol_table;
-    };
+struct ModuleId {
+  std::uint32_t value = 0;
+  friend bool operator==(ModuleId, ModuleId) = default;
+};
 
-    class ScopeTable {
-        public:
-            ScopeId create(std::optional<ScopeId> parent);
-            std::optional<SymbolId> lookup(ScopeId scope, NameId name);
-            bool insert(ScopeId scope, NameId name, SymbolId symbol);
+struct ImportedSymbol {
+  ModuleId module;
+  NameId name;
+  friend bool operator==(ImportedSymbol, ImportedSymbol) = default;
+};
 
-        private:
-            std::vector<Scope> scopes_;
-    };
+enum class SymbolKind {
+  Constant,
+  Function,
+  ExternalFunction,
+  Type,
+  Trait,
+  GenericParameter,
+  Effect,
+  Capability,
+  Domain,
+  Parameter,
+  Local,
+  Variant,
+  Field,
+};
 
-}
+struct Symbol {
+  ScopeId owner_scope;
+  SymbolKind kind;
+  NameId name;
+  flux::SourceSpan declaration_span;
+  bool is_public = false;
+};
+
+struct SymbolTable {
+  SymbolId add(Symbol symbol);
+  const Symbol &get(SymbolId symbol) const;
+  Symbol &get_mut(SymbolId symbol);
+  std::size_t size() const noexcept;
+
+private:
+  std::optional<SymbolTableId> parent_;
+  std::vector<Symbol> symbols_;
+};
+
+using BindingTarget = std::variant<SymbolId, ModuleId, ImportedSymbol>;
+
+enum class BindingOrigin {
+  Declaration,
+  ImportAlias,
+  ModuleImport,
+  SelectedImport,
+};
+
+struct Binding {
+  BindingTarget target;
+  BindingOrigin origin;
+  SourceSpan defined_at;
+};
+
+struct Scope {
+  std::optional<ScopeId> parent;
+  std::unordered_map<NameId, Binding> bindings;
+};
+
+} // namespace flux::semantic_analysis

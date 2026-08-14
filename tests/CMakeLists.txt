@@ -25,3 +25,12 @@ target_link_libraries(flux_parser_tests
         flux_parser)
 
 add_test(NAME flux_parser_tests COMMAND flux_parser_tests)
+
+add_executable(flux_sema_tests
+    sema_tests.cpp)
+
+target_link_libraries(flux_sema_tests
+    PRIVATE
+        flux_sema)
+
+add_test(NAME flux_sema_tests COMMAND flux_sema_tests)

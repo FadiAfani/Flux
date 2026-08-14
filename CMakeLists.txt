@@ -31,5 +31,18 @@ target_link_libraries(flux_parser
     PUBLIC
         flux_lexer)
 
+add_library(flux_sema
+    src/sema/module.cpp
+    src/sema/name_resolver.cpp
+    src/sema/symbol.cpp)
+
+target_include_directories(flux_sema
+    PUBLIC
+        ${FLUX_INCLUDE_DIR})
+
+target_link_libraries(flux_sema
+    PUBLIC
+        flux_parser)
+
 enable_testing()
 add_subdirectory(tests)
