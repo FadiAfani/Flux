@@ -65,6 +65,7 @@ struct MetaArgument {
 };
 
 struct EffectReference {
+
   QualifiedName name;
   std::vector<MetaArgument> arguments;
 };

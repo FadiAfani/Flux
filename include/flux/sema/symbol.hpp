@@ -11,9 +11,21 @@
 
 namespace flux::semantic_analysis {
 
-using ScopeId = std::uint32_t;
-using NameId = std::uint32_t;
 using SymbolTableId = std::uint32_t;
+
+struct ScopeId {
+  std::uint32_t value = 0;
+  friend bool operator==(ScopeId, ScopeId) = default;
+};
+
+struct NameId {
+  std::uint32_t value = 0;
+  friend bool operator==(NameId, NameId) = default;
+};
+
+struct NameIdHash {
+  std::size_t operator()(NameId id) const noexcept { return id.value; }
+};
 
 struct SymbolId {
   std::uint32_t value = 0;
@@ -83,7 +95,18 @@ struct Binding {
 
 struct Scope {
   std::optional<ScopeId> parent;
-  std::unordered_map<NameId, Binding> bindings;
+  std::unordered_map<NameId, Binding, NameIdHash> bindings;
+};
+
+class ScopeRegistry {
+public:
+  void register_scope();
+  void register_scope(Scope scope);
+  Scope &get_mut(ScopeId id);
+  const Scope &get(ScopeId id);
+
+private:
+  std::vector<Scope> scopes_;
 };
 
 } // namespace flux::semantic_analysis
